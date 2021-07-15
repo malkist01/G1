@@ -567,9 +567,6 @@ asmlinkage __visible void __init start_kernel(void)
 {
 	char *command_line;
 	char *after_dashes;
-#ifdef CONFIG_MACH_XIAOMI_C3J
-	char *p = NULL;
-#endif
 
 	set_task_stack_end_magic(&init_task);
 	smp_setup_processor_id();
@@ -601,9 +598,7 @@ asmlinkage __visible void __init start_kernel(void)
 	pr_notice("Kernel command line: %s\n", boot_command_line);
 
 #ifdef CONFIG_MACH_XIAOMI_C3J
-	p = NULL;
-	p = strstr(command_line, "androidboot.fpsensor=fpc");
-	if (p) {
+	if (strstr(command_line, "androidboot.fpsensor=fpc")) {
 		fpsensor = 1; /* fpc fingerprint */
 		printk("I am fpc fingerprint");
 	} else {
@@ -611,9 +606,7 @@ asmlinkage __visible void __init start_kernel(void)
 		printk("I am goodix fingerprint");
 	}
 
-	p = NULL;
-	p = strstr(command_line, "androidboot.hwversion=2");
-	if (p) {
+	if (strstr(command_line, "androidboot.hwversion=2")) {
 		lct_hardwareid = 2;
 		printk("I am new board for imx582 camera");
 	} else {
