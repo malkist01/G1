@@ -89,10 +89,11 @@ CROSS_COMPILE=aarch64-linux-android- \
 CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
 CLANG_TRIPLE=aarch64-linux-gnu- \
 Image.gz-dtb \
-dtbo.img 2>&1 | tee log.txt
+dtbo.img \
+dtb.img 2>&1 | tee log.txt
 
 # ===== CHECK RESULT =====
-if [ -f "out/arch/arm64/boot/Image.gz-dtb" ] && [ -f "out/arch/arm64/boot/dtbo.img" ]; then
+if [ -f "out/arch/arm64/boot/Image.gz-dtb" ] && [ -f "out/arch/arm64/boot/dtbo.img" ] && [ -f "out/arch/arm64/boot/dtb.img" ]; then
 tg_msg "✅ <b>Build Success</b>
 Zipping kernel..."
 
@@ -106,6 +107,7 @@ fi
 
 cp out/arch/arm64/boot/Image.gz-dtb AnyKernel3
 cp out/arch/arm64/boot/dtbo.img AnyKernel3
+cp out/arch/arm64/boot/dtbo.img Anykernel3
 
 rm -rf *zip
 cd AnyKernel3
