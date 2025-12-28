@@ -107,7 +107,7 @@ fi
 
 cp out/arch/arm64/boot/Image.gz-dtb AnyKernel3
 cp out/arch/arm64/boot/dtbo.img AnyKernel3
-cp out/arch/arm64/boot/dtbo.img Anykernel3
+cp out/arch/arm64/boot/dtbo.img AnyKernel3
 
 rm -rf *zip
 cd AnyKernel3
