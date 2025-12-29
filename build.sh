@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 SECONDS=0
-ZIPNAME="Neophyte-Artemis-Ginkgo-$(TZ=Asia/Jakarta date +"%Y%m%d-%H%M").zip"
+ZIPNAME="Neophyte-Silent-Ginkgo-$(TZ=Asia/Jakarta date +"%Y%m%d-%H%M").zip"
 TC_DIR="$(pwd)/../tc/"
 CLANG_DIR="${TC_DIR}clang"
 GCC_64_DIR="${TC_DIR}aarch64-linux-android-4.9"
@@ -107,7 +107,7 @@ fi
 
 cp out/arch/arm64/boot/Image.gz-dtb AnyKernel3
 cp out/arch/arm64/boot/dtbo.img AnyKernel3
-cp out/arch/arm64/boot/dtbo.img AnyKernel3
+cp out/arch/arm64/boot/dtb.img AnyKernel3
 
 rm -rf *zip
 cd AnyKernel3
