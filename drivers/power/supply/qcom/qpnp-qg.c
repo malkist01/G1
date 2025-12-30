@@ -1741,37 +1741,6 @@ static int qg_get_charge_counter(struct qpnp_qg *chip, int *charge_counter)
 	return 0;
 }
 
-static int qg_get_charge_raw(struct qpnp_qg *chip, int *charge_raw)
-{
-	int rc, cur_soc = 0;
-	int64_t capacity = 0;
-
-	if (is_debug_batt_id(chip) || chip->battery_missing) {
-		*charge_raw = -EINVAL;
-		return 0;
-	}
-
-	rc = qg_get_learned_capacity(chip, &capacity);
-	if (rc < 0 || !capacity)
-		rc = qg_get_nominal_capacity((int *)&capacity, 250, true);
-
-	if (rc < 0) {
-		pr_err("Failed to obtain max capacity for charge-raw rc=%d\n", rc);
-		return rc;
-	}
-	
-	rc = qg_get_battery_capacity(chip, &cur_soc);
-	if (rc < 0) {
-		pr_err("Failed to obtain current capacity for charge-raw rc=%d\n", rc);
-		return rc;
-	}
-	
-	// current capacity = (current charge/100) * max capacity
-	*charge_raw = div_s64(capacity * cur_soc, 100);
-
-	return 0;
-}
-
 static int qg_get_power(struct qpnp_qg *chip, int *val, bool average)
 {
 	int rc, v_min, v_ocv, rbatt = 0, esr = 0;
@@ -2206,9 +2175,6 @@ static int qg_psy_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_BATT_AGE_LEVEL:
 		pval->intval = chip->batt_age_level;
 		break;
-	case POWER_SUPPLY_PROP_CHARGE_NOW_RAW:
-		rc = qg_get_charge_raw(chip, &pval->intval);
-		break;
 	default:
 		pr_debug("Unsupported property %d\n", psp);
 		break;
@@ -2270,7 +2236,6 @@ static enum power_supply_property qg_psy_props[] = {
 	POWER_SUPPLY_PROP_POWER_NOW,
 	POWER_SUPPLY_PROP_SCALE_MODE_EN,
 	POWER_SUPPLY_PROP_BATT_AGE_LEVEL,
-	POWER_SUPPLY_PROP_CHARGE_NOW_RAW,
 };
 
 static const struct power_supply_desc qg_psy_desc = {
@@ -4312,9 +4277,9 @@ static int process_suspend(struct qpnp_qg *chip)
 	get_rtc_time(&chip->suspend_time);
 
 	qg_dbg(chip, QG_DEBUG_PM, "FIFO rt_length=%d sleep_fifo_length=%d default_s2_count=%d suspend_data=%d time=%d\n",
-			(int)fifo_rt_length, (int)sleep_fifo_length,
-			chip->dt.s2_fifo_length, (int)chip->suspend_data,
-			(int)chip->suspend_time);
+			fifo_rt_length, sleep_fifo_length,
+			chip->dt.s2_fifo_length, chip->suspend_data,
+			chip->suspend_time);
 
 	return rc;
 }
@@ -4374,10 +4339,10 @@ static int process_resume(struct qpnp_qg *chip)
 	}
 	rt_status &= FIFO_UPDATE_DONE_INT_LAT_STS_BIT;
 
-	qg_dbg(chip, QG_DEBUG_PM, "FIFO_DONE_STS=%ld suspend_data=%ld good_ocv=%ld sleep_time=%ld secs\n",
-				(unsigned long)!!rt_status, (unsigned long)chip->suspend_data,
-				(unsigned long)chip->kdata.param[QG_GOOD_OCV_UV].valid,
-				(unsigned long)sleep_time_secs);
+	qg_dbg(chip, QG_DEBUG_PM, "FIFO_DONE_STS=%d suspend_data=%d good_ocv=%d sleep_time=%d secs\n",
+				!!rt_status, chip->suspend_data,
+				chip->kdata.param[QG_GOOD_OCV_UV].valid,
+				sleep_time_secs);
 	/*
 	 * If this is not a wakeup from FIFO-done,
 	 * process the data immediately if - we have data from

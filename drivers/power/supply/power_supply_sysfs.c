@@ -44,7 +44,7 @@ static const char * const power_supply_type_text[] = {
 	"Unknown", "Battery", "UPS", "Mains", "USB",
 	"USB_DCP", "USB_CDP", "USB_ACA", "USB_C",
 	"USB_PD", "USB_PD_DRP", "BrickID",
-	"USB_HVDCP", "USB_HVDCP_3", "USB_HVDCP", "Wireless", "USB_FLOAT",
+	"USB_HVDCP", "USB_HVDCP_3", "USB_HVDCP_3P5", "Wireless", "USB_FLOAT",
 	"BMS", "Parallel", "Main", "Wipower", "USB_C_UFP", "USB_C_DFP",
 	"Charge_Pump",
 };
@@ -113,7 +113,7 @@ static ssize_t power_supply_show_property(struct device *dev,
 					"driver has no data for `%s' property\n",
 					attr->attr.name);
 			else if (ret != -ENODEV && ret != -EAGAIN)
-				dev_dbg(dev,
+				dev_err_ratelimited(dev,
 					"driver failed to report `%s' property: %zd\n",
 					attr->attr.name, ret);
 			return ret;
@@ -490,10 +490,6 @@ int power_supply_uevent(struct device *dev, struct kobj_uevent_env *env)
 	int ret = 0, j;
 	char *prop_buf;
 	char attrname[64];
-
-#ifdef CONFIG_MACH_XIAOMI_GINKGO
-	dev_dbg(dev, "uevent\n");
-#endif
 
 	if (!psy || !psy->desc) {
 		dev_dbg(dev, "No power supply yet\n");

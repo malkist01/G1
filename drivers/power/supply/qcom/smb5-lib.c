@@ -1342,9 +1342,7 @@ static int set_sdp_current(struct smb_charger *chg, int icl_ua)
 
 #ifdef CONFIG_FORCE_FAST_CHARGE
 	if (force_fast_charge > 0 && icl_ua == USBIN_500MA)
-	{
 		icl_ua = USBIN_900MA;
-	}
 #endif
 
 	/* power source is SDP */
@@ -2896,26 +2894,24 @@ static int smblib_update_thermal_readings(struct smb_charger *chg)
 }
 
 /* SW thermal regulation thresholds in deciDegC */
-#define DIE_TEMP_RST_THRESH		700
-#define DIE_TEMP_REG_H_THRESH		600
-#define DIE_TEMP_REG_L_THRESH		500
+#define DIE_TEMP_RST_THRESH		1000
+#define DIE_TEMP_REG_H_THRESH		800
+#define DIE_TEMP_REG_L_THRESH		600
 
-#define CONNECTOR_TEMP_SHDN_THRESH	550
-#define CONNECTOR_TEMP_RST_THRESH	500
-#define CONNECTOR_TEMP_REG_H_THRESH	450
-#define CONNECTOR_TEMP_REG_L_THRESH	400
+#define CONNECTOR_TEMP_SHDN_THRESH	700
+#define CONNECTOR_TEMP_RST_THRESH	600
+#define CONNECTOR_TEMP_REG_H_THRESH	550
+#define CONNECTOR_TEMP_REG_L_THRESH	500
 
-#define SMB_TEMP_SHDN_THRESH		900
-#define SMB_TEMP_RST_THRESH		700
-#define SMB_TEMP_REG_H_THRESH		600
-#define SMB_TEMP_REG_L_THRESH		500
+#define SMB_TEMP_SHDN_THRESH		1400
+#define SMB_TEMP_RST_THRESH		900
+#define SMB_TEMP_REG_H_THRESH		800
+#define SMB_TEMP_REG_L_THRESH		600
 
-#define SKIN_TEMP_SHDN_THRESH		550
-#define SKIN_TEMP_RST_THRESH		500
-#define SKIN_TEMP_REG_H_THRESH		450
-#define SKIN_TEMP_REG_L_THRESH		400
-
-
+#define SKIN_TEMP_SHDN_THRESH		700
+#define SKIN_TEMP_RST_THRESH		600
+#define SKIN_TEMP_REG_H_THRESH		550
+#define SKIN_TEMP_REG_L_THRESH		500
 
 #define THERM_REG_RECHECK_DELAY_1S	1000	/* 1 sec */
 #define THERM_REG_RECHECK_DELAY_8S	8000	/* 8 sec */
@@ -5555,7 +5551,7 @@ static void smblib_handle_hvdcp_3p0_auth_done(struct smb_charger *chg,
 				!timer_pending(&chg->apsd_timer)) {
 			smblib_dbg(chg, PR_MISC,
 				"APSD Extented timer started at %lld\n",
-				(unsigned long long)jiffies_to_msecs(jiffies));
+				jiffies_to_msecs(jiffies));
 
 			mod_timer(&chg->apsd_timer,
 				msecs_to_jiffies(APSD_EXTENDED_TIMEOUT_MS)
@@ -7235,7 +7231,7 @@ static void apsd_timer_cb(unsigned long data)
 	struct smb_charger *chg = (struct smb_charger *)data;
 
 	smblib_dbg(chg, PR_MISC, "APSD Extented timer timeout at %lld\n",
-			(unsigned long long)jiffies_to_msecs(jiffies));
+			jiffies_to_msecs(jiffies));
 
 	chg->apsd_ext_timeout = true;
 }
