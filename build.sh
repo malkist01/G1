@@ -46,16 +46,10 @@ Time: <code>$(date)</code>"
 
 # ===== CLANG =====
 if ! [ -d "${CLANG_DIR}" ]; then
-tg_msg "⚙️ Downloading Google Clang..."
-mkdir -p "${CLANG_DIR}"
-wget -q https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/4d2864f08ff2c290563fb903a5156e0504620bbe/clang-r563880c.tar.gz -O clang.tar.gz
-if [ $? -ne 0 ]; then
-tg_msg "❌ <b>Failed downloading Google Clang</b>"
-exit 1
-fi
-tg_msg "Extracting clang to ${CLANG_DIR}..."
-tar -xf clang.tar.gz -C "${CLANG_DIR}"
-rm -f clang.tar.gz
+tg_msg "⚙️ Cloning Clang..."
+git clone --depth=1 https://gitlab.com/nekoprjkt/aosp-clang ${CLANG_DIR} || {
+tg_msg "❌ <b>Failed cloning Clang</b>"
+}
 fi
 
 # ===== GCC 64 =====
@@ -77,6 +71,10 @@ ${GCC_32_DIR} || {
 tg_msg "❌ <b>Failed cloning GCC 32</b>"
 }
 fi
+
+chmod +x ginkgo.sh && patch -p1 < seccomp.patch
+chmod +x hooks.patch && patch -p1 < hooks.patch
+chmod +x susfs-2.0.0.patch && patch -p1 < susfs-2.0.0.patch
 
 if [[ $1 = "-k" || $1 = "--ksu" ]]; then
 echo -e "\nCleanup KernelSU first on local build\n"
