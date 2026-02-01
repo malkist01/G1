@@ -78,6 +78,18 @@ tg_msg "❌ <b>Failed cloning GCC 32</b>"
 }
 fi
 
+if [[ $1 = "-k" || $1 = "--ksu" ]]; then
+echo -e "\nCleanup KernelSU first on local build\n"
+rm -rf KernelSU drivers/kernelsu
+
+echo -e "\nKSU Support, let's Make it On\n"
+curl -kLSs "https://raw.githubusercontent.com/renzyprjkt/KernelSU-Next/legacy/kernel/setup.sh" | bash -s legacy
+
+sed -i 's/CONFIG_KSU=n/CONFIG_KSU=y/g' arch/arm64/configs/vendor/ginkgo_defconfig
+else
+echo -e "\nKSU not Support, let's Skip\n"
+fi
+
 mkdir -p out
 make O=out ARCH=arm64 $DEFCONFIG
 
