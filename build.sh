@@ -32,12 +32,11 @@ curl -s -X POST "${API_URL}/sendDocument" \
 }
 
 # ===== ENV =====
+# ===== ENV =====
 export PATH="$CLANG_DIR/bin:$PATH"
 export LD_LIBRARY_PATH="$CLANG_DIR/lib:$LD_LIBRARY_PATH"
 export KBUILD_BUILD_VERSION="1"
 export LOCALVERSION
-ccache --max-size=2G
-ccache --set-config=compression=true
 
 # ===== START NOTIF =====
 tg_msg "🚀 <b>Kernel Build Started</b>
@@ -81,9 +80,9 @@ echo -e "\nCleanup KernelSU first on local build\n"
 rm -rf KernelSU drivers/kernelsu
 
 echo -e "\nKSU Support, let's Make it On\n"
-curl -kLSs "https://raw.githubusercontent.com/malkist01/KernelSU-Next/legacy/kernel/setup.sh" | bash -s legacy
+curl -kLSs "https://raw.githubusercontent.com/malkist01/KernelSU-Next/legacy/kernel/setup.sh" | bash
 
-sed -i 's/CONFIG_KSU=n/CONFIG_KSU=y/g' arch/arm64/configs/vendor/ginkgo_defconfig
+sed -i 's/CONFIG_KSU=y/CONFIG_KSU_KPROBES_HOOK=n' arch/arm64/configs/vendor/ginkgo_defconfig
 else
 echo -e "\nKSU not Support, let's Skip\n"
 fi
