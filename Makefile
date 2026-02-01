@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: GPL-2.0
 VERSION = 4
 PATCHLEVEL = 14
-SUBLEVEL = 369
-EXTRAVERSION = -openela
-NAME = Petit Gorille
+SUBLEVEL = 356
+EXTRAVERSION = 
+NAME = 
 
 # *DOCUMENTATION*
 # To see a list of typical targets execute "make help"
