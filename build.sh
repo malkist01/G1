@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 SECONDS=0
-ZIPNAME="Neophyte-Silent-Ginkgo-$(TZ=Asia/Jakarta date +"%Y%m%d-%H%M").zip"
+ZIPNAME="Teletubies-Ginkgo-$(TZ=Asia/Jakarta date +"%Y%m%d-%H%M").zip"
 TC_DIR="$(pwd)/../tc/"
 CLANG_DIR="${TC_DIR}clang"
 GCC_64_DIR="${TC_DIR}aarch64-linux-android-4.9"
@@ -81,7 +81,7 @@ echo -e "\nCleanup KernelSU first on local build\n"
 rm -rf KernelSU drivers/kernelsu
 
 echo -e "\nKSU Support, let's Make it On\n"
-curl -kLSs "https://raw.githubusercontent.com/renzyprjkt/KernelSU-Next/legacy/kernel/setup.sh" | bash -s legacy
+curl -kLSs "https://raw.githubusercontent.com/malkist01/KernelSU-Next/legacy/kernel/setup.sh" | bash -s legacy
 
 sed -i 's/CONFIG_KSU=n/CONFIG_KSU=y/g' arch/arm64/configs/vendor/ginkgo_defconfig
 else
