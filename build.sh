@@ -36,6 +36,8 @@ export PATH="$CLANG_DIR/bin:$PATH"
 export LD_LIBRARY_PATH="$CLANG_DIR/lib:$LD_LIBRARY_PATH"
 export KBUILD_BUILD_VERSION="1"
 export LOCALVERSION
+ccache --max-size=2G
+ccache --set-config=compression=true
 
 # ===== START NOTIF =====
 tg_msg "🚀 <b>Kernel Build Started</b>
