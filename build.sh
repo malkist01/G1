@@ -1,147 +1,100 @@
 #!/usr/bin/env bash
-#
-SECONDS=0
-ZIPNAME="Teletubies-Ginkgo-$(TZ=Asia/Jakarta date +"%Y%m%d-%H%M").zip"
-TC_DIR="$(pwd)/../tc/"
-CLANG_DIR="${TC_DIR}clang"
-GCC_64_DIR="${TC_DIR}aarch64-linux-android-4.9"
-GCC_32_DIR="${TC_DIR}arm-linux-androideabi-4.9"
-AK3_DIR="$(pwd)/AnyKernel3"
-DEFCONFIG="vendor/ginkgo_defconfig"
-
-# ===== Set timezone =====
-export TZ=Asia/Jakarta;
-
-# ===== TELEGRAM CONFIG =====
-BOT_TOKEN="7868194496:AAGY7WwRRbeCOPYOnczoCPh2psC43Q0F3JI"
-CHAT_ID="-1002287610863"
-API_URL="https://api.telegram.org/bot${BOT_TOKEN}"
-
-tg_msg() {
-curl -s -X POST "${API_URL}/sendMessage" \
--d chat_id="${CHAT_ID}" \
--d text="$1" \
--d parse_mode=HTML > /dev/null
-}
-
-tg_file() {
-curl -s -X POST "${API_URL}/sendDocument" \
--F chat_id="${CHAT_ID}" \
--F document=@"$1" \
--F caption="$2" > /dev/null
-}
-
-# ===== ENV =====
-# ===== ENV =====
-export PATH="$CLANG_DIR/bin:$PATH"
-export LD_LIBRARY_PATH="$CLANG_DIR/lib:$LD_LIBRARY_PATH"
-export KBUILD_BUILD_VERSION="1"
-export LOCALVERSION
-
-# ===== START NOTIF =====
-tg_msg "🚀 <b>Kernel Build Started</b>
-Device: <b>Redmi Note 8 (Ginkgo)</b>
-Time: <code>$(date)</code>"
-
-# ===== CLANG =====
-if ! [ -d "${CLANG_DIR}" ]; then
-tg_msg "⚙️ Cloning Clang..."
-git clone --depth=1 https://gitlab.com/nekoprjkt/aosp-clang ${CLANG_DIR} || {
-tg_msg "❌ <b>Failed cloning Clang</b>"
-}
-fi
-
-# ===== GCC 64 =====
-if ! [ -d "${GCC_64_DIR}" ]; then
-tg_msg "⚙️ Cloning GCC 64..."
-git clone --depth=1 -b lineage-19.1 \
-https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9.git \
-${GCC_64_DIR} || {
-tg_msg "❌ <b>Failed cloning GCC 64</b>"
-}
-fi
-
-# ===== GCC 32 =====
-if ! [ -d "${GCC_32_DIR}" ]; then
-tg_msg "⚙️ Cloning GCC 32..."
-git clone --depth=1 -b lineage-19.1 \
-https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_arm_arm-linux-androideabi-4.9.git \
-${GCC_32_DIR} || {
-tg_msg "❌ <b>Failed cloning GCC 32</b>"
-}
-fi
-
+echo "Cloning dependencies"
+mkdir -p "clang"
+wget -q https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/4d2864f08ff2c290563fb903a5156e0504620bbe/clang-r563880c.tar.gz -O clang.tar.gz tar -xf clang.tar.gz -C clang
+git clone https://github.com/sohamxda7/llvm-stable -b gcc64 --depth=1 gcc
+git clone https://github.com/sohamxda7/llvm-stable -b gcc32  --depth=1 gcc32
+git clone --depth=1 https://github.com/malkist01/AnyKernel2 AnyKernel
 chmod +x ginkgo.sh && patch -p1 < seccomp.patch
 chmod +x hooks.patch && patch -p1 < hooks.patch
 chmod +x susfs-2.0.0.patch && patch -p1 < susfs-2.0.0.patch
-
-if [[ $1 = "-k" || $1 = "--ksu" ]]; then
-echo -e "\nCleanup KernelSU first on local build\n"
-rm -rf KernelSU drivers/kernelsu
-
-echo -e "\nKSU Support, let's Make it On\n"
-curl -kLSs "https://raw.githubusercontent.com/malkist01/KernelSU-Next/legacy/kernel/setup.sh" | bash
-
-sed -i 's/CONFIG_KSU=y/CONFIG_KSU_KPROBES_HOOK=n' arch/arm64/configs/vendor/ginkgo_defconfig
-else
-echo -e "\nKSU not Support, let's Skip\n"
-fi
-
-mkdir -p out
-make O=out ARCH=arm64 $DEFCONFIG
-
-# ===== BUILD =====
-tg_msg "🔨 <b>Compilation Started</b>"
-make -j$(nproc --all) O=out \
-ARCH=arm64 \
-CC=clang \
-LD=ld.lld \
-AR=llvm-ar \
-AS=llvm-as \
-NM=llvm-nm \
-OBJCOPY=llvm-objcopy \
-OBJDUMP=llvm-objdump \
-STRIP=llvm-strip \
-CROSS_COMPILE=aarch64-linux-android- \
-CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
-CLANG_TRIPLE=aarch64-linux-gnu- \
-Image.gz-dtb \
-dtbo.img \
-dtb.img 2>&1 | tee log.txt
-
-# ===== CHECK RESULT =====
-if [ -f "out/arch/arm64/boot/Image.gz-dtb" ] && [ -f "out/arch/arm64/boot/dtbo.img" ] && [ -f "out/arch/arm64/boot/dtb.img" ]; then
-        finerr
-tg_msg "✅ <b>Build Success</b>
-Zipping kernel..."
-
-if [ -d "$AK3_DIR" ]; then
-cp -r $AK3_DIR AnyKernel3
-else
-git clone -q https://github.com/neophyteprjkt/AnyKernel3 || {
-tg_msg "❌ Failed cloning AnyKernel3"
+curl https://raw.githubusercontent.com/malkist01/KernelSU-Next/refs/heads/legacy/kernel/setup.sh | bash
+echo "Done"
+ZIPNAME="Teletubies"
+DEVICE="ginkgo"
+IMAGE=$(pwd)/out/arch/arm64/boot/Image.gz-dtb
+DTBO=$(pwd)/out/arch/arm64/boot/dtbo.img
+DTB=$(pwd)/out/arch/arm64/boot/dtb.img
+TANGGAL=$(date +"%F-%S")
+START=$(date +"%s")
+KERNEL_DIR=$(pwd)
+PATH="${KERNEL_DIR}/clang/bin:${KERNEL_DIR}/gcc/bin:${KERNEL_DIR}/gcc32/bin:${PATH}"
+export KBUILD_COMPILER_STRING="$(${KERNEL_DIR}/clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g')"
+export ARCH=arm64
+export KBUILD_BUILD_HOST=malkist
+export KBUILD_BUILD_USER="android"
+# sticker plox
+function sticker() {
+    curl -s -X POST "https://api.telegram.org/bot$token/sendSticker" \
+        -d sticker="CAACAgEAAxkBAAEnKnJfZOFzBnwC3cPwiirjZdgTMBMLRAACugEAAkVfBy-aN927wS5blhsE" \
+        -d chat_id=$chat_id
 }
-fi
+# Send info plox channel
+function sendinfo() {
+    curl -s -X POST "https://api.telegram.org/bot$token/sendMessage" \
+        -d chat_id="$chat_id" \
+        -d "disable_web_page_preview=true" \
+        -d "parse_mode=html" \
+        -d text="<b>• Teletubies Kernel •</b>%0ABuild started on <code>Circle CI</code>%0AFor device <b>Redmi Note 8</b> (ginkgo)%0Abranch <code>$(git rev-parse --abbrev-ref HEAD)</code>(master)%0AUnder commit <code>$(git log --pretty=format:'"%h : %s"' -1)</code>%0AUsing compiler: <code>${KBUILD_COMPILER_STRING}</code>%0AStarted on <code>$(date)</code>%0A<b>Build Status:</b>#Stable"
+}
+# Push kernel to channel
+function push() {
+    cd AnyKernel
+    ZIP=$(echo *.zip)
+    curl -F document=@$ZIP "https://api.telegram.org/bot$token/sendDocument" \
+        -F chat_id="$chat_id" \
+        -F "disable_web_page_preview=true" \
+        -F "parse_mode=html" \
+        -F caption="Build took $(($DIFF / 60)) minute(s) and $(($DIFF % 60)) second(s). | For <b>Redmi Note 8 (ginkgo)</b> | <b>$(${GCC}gcc --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g')</b>"
+}
+# Fin Error
+function finerr() {
+    curl -s -X POST "https://api.telegram.org/bot$token/sendMessage" \
+        -d chat_id="$chat_id" \
+        -d "disable_web_page_preview=true" \
+        -d "parse_mode=markdown" \
+        -d text="Build throw an error(s)"
+    exit 1
+}
+# Compile plox
+function compile() {
+    make O=out ARCH=arm64 vendor/ginkgo_defconfig
+    make -j$(nproc --all) O=out \
+                    ARCH=arm64 \
+                    CC=clang \
+                    LD=ld.lld \
+                    AR=llvm-ar \
+                    AS=llvm-as \
+                    NM=llvm-nm \
+                    OBJCOPY=llvm-objcopy \
+                    OBJDUMP=llvm-objdump \
+                    STRIP=llvm-strip \
+                    CLANG_TRIPLE=aarch64-linux-gnu- \
+                    CROSS_COMPILE=aarch64-linux-android- \
+                    CROSS_COMPILE_ARM32=arm-linux-androideabi- \
+                    Image.gz-dtb \
+                    dtbo.img \
+                    dtb.img 2>&1 | tee log.txt
 
-cp out/arch/arm64/boot/Image.gz-dtb AnyKernel3
-cp out/arch/arm64/boot/dtbo.img AnyKernel3
-cp out/arch/arm64/boot/dtb.img AnyKernel3
+    if ! [ -a "$IMAGE" "$DTBO" "$DTB" ]; then
+        finerr
+        exit 1
+    fi
+    cp out/arch/arm64/boot/Image.gz-dtb AnyKernel
+    cp out/arch/arm64/boot/dtbo.img AnyKernel
+    cp out/arch/arm64/boot/dtb.img AnyKernel
+}
+# Zipping
+function zipping() {
+    cd AnyKernel || exit 1
+    zip -r9 ${ZIPNAME}-${DEVICE}-${TANGGAL}.zip *
+    cd ..
+}
+sticker
+sendinfo
+compile
+zipping
+END=$(date +"%s")
+DIFF=$(($END - $START))
+push
 
-rm -rf *zip
-cd AnyKernel3
-git checkout main &> /dev/null
-zip -r9 "../$ZIPNAME" * -x '*.git*' README.md *placeholder
-cd ..
-
-# ===== SEND ZIP =====
-tg_file "$ZIPNAME" "📦 Kernel Build Finished
-⏱ Time: $((SECONDS / 60))m $((SECONDS % 60))s"
-
-rm -rf AnyKernel3
-rm -rf out/arch/arm64/boot
-else
-tg_msg "❌ <b>Build Failed</b>
-Check <code>log.txt</code>"
-fi
-
-tg_msg "🎉 <b>Done!</b>"
