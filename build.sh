@@ -23,8 +23,12 @@ KERNEL_DIR=$(pwd)
 PATH="${KERNEL_DIR}/clang/bin:${KERNEL_DIR}/gcc/bin:${KERNEL_DIR}/gcc32/bin:${PATH}"
 export KBUILD_COMPILER_STRING="$(${KERNEL_DIR}/clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g')"
 export ARCH=arm64
+export CCACHE_EXEC=$(which ccache)
 export KBUILD_BUILD_HOST=malkist
 export KBUILD_BUILD_USER="android"
+ccache --max-size=2G
+ccache --set-config=compression=true
+echo "CCACHE_DIR=$KERNEL_DIR/.ccache"
 # sticker plox
 function sticker() {
     curl -s -X POST "https://api.telegram.org/bot$token/sendSticker" \
@@ -63,14 +67,10 @@ function compile() {
     make O=out ARCH=arm64 vendor/ginkgo_defconfig
     make -j$(nproc --all) O=out \
                     ARCH=arm64 \
-                    CC=clang \
+                    CC="ccache clang" \
                     LD=ld.lld \
-                    AR=llvm-ar \
-                    AS=llvm-as \
-                    NM=llvm-nm \
-                    OBJCOPY=llvm-objcopy \
-                    OBJDUMP=llvm-objdump \
-                    STRIP=llvm-strip \
+                    LLVM=1 \
+                    LLVM_IAS=1 \
                     CLANG_TRIPLE=aarch64-linux-gnu- \
                     CROSS_COMPILE=aarch64-linux-android- \
                     CROSS_COMPILE_ARM32=arm-linux-androideabi- \
