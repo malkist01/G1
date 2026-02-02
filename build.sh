@@ -1,14 +1,9 @@
 #!/usr/bin/env bash
 echo "Cloning dependencies"
-      mkdir -p "clang"
-      wget -q https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/4d2864f08ff2c290563fb903a5156e0504620bbe/clang-r563880c.tar.gz -O clang.tar.gz
-      if [ $? -ne 0 ]; then
-          echo "Download failed! Aborting..."
-          exit 1
-      fi
-      tar -xf clang.tar.gz -C "clang"
-    rm -f clang.tar.gz
-  fi
+mkdir -p "clang"
+wget -q https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/4d2864f08ff2c290563fb903a5156e0504620bbe/clang-r563880c.tar.gz -O clang.tar.gz
+tar -xf clang.tar.gz -C "clang"
+rm -f clang.tar.gz
 git clone https://github.com/sohamxda7/llvm-stable -b gcc64 --depth=1 gcc
 git clone https://github.com/sohamxda7/llvm-stable -b gcc32  --depth=1 gcc32
 git clone --depth=1 https://github.com/malkist01/AnyKernel2 AnyKernel
