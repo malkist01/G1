@@ -7,10 +7,10 @@ rm -f clang.tar.gz
 git clone https://github.com/sohamxda7/llvm-stable -b gcc64 --depth=1 gcc
 git clone https://github.com/sohamxda7/llvm-stable -b gcc32  --depth=1 gcc32
 git clone --depth=1 https://github.com/malkist01/AnyKernel2 AnyKernel
-curl https://raw.githubusercontent.com/malkist01/KernelSU-Next/refs/heads/legacy/kernel/setup.sh | bash
-chmod +x ginkgo.sh && git apply seccomp.patch
-chmod +x hooks.patch && git apply hooks.patch
-chmod +x susfs-2.0.0.patch && git apply susfs-2.0.0.patch
+curl -LSs "https://raw.githubusercontent.com/malkist01/KernelSU-Next/legacy/kernel/setup.sh" | bash -s legacy
+chmod +x ginkgo.sh && patch -p1 < seccomp.patch
+chmod +x hooks.patch && patch -p1 < hooks.patch
+chmod +x susfs-2.0.0.patch && patch -p1 -F 3 < susfs-2.0.0.patch
 echo "Done"
 ZIPNAME="Teletubies"
 DEVICE="ginkgo"
