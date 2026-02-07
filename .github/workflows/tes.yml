@@ -6,6 +6,8 @@ on:
       repository: { description: 'Repo', required: true, default: 'malkist01/G1' }
       branch: { description: 'Branch', required: true, default: 'main' }
       defconfig: { description: 'Defconfig', required: true, default: 'vendor/ginkgo_defconfig' }
+      anykernel: { description: 'Anykernel', required: true, default: 'malkist01/anykernel2' }
+      anykernel_branch: { description: 'AnykernelBranch', required: true, default: 'main' }
       kernelsu_branch: { description: 'KSU Branch', required: false, default: 'master' }
 
 jobs:
@@ -41,12 +43,27 @@ jobs:
         
         make $ARGS ${{ github.event.inputs.defconfig }} 2>&1 | tee defconfig.log || true
         make -j$(nproc) $ARGS 2>&1 | tee compile.log || true
+ 
+              ZIP_NAME="AnjaniLaurens-${{ env.BUILD_TIME }}.zip"
+                             
+        if [ -f "out/arch/arm64/boot/Image.gz-dtb" ] && [ -f "out/arch/arm64/boot/dtbo.img" ] && [ -f "out/arch/arm64/boot/dtb.img" ]; then
+             finderr
+       if [ -d "$AK3_DIR" ]; then
+cp -r $AK3_DIR AnyKernel3
+else
+git clone -q https://github.com/neophyteprjkt/AnyKernel3
+fi
 
-        if [ -f out/arch/arm64/boot/Image.gz ]; then
-          ZIP_NAME="AnjaniLaurens-${{ env.BUILD_TIME }}.zip"
-          zip -j "$ZIP_NAME" out/arch/arm64/boot/Image out/arch/arm64/boot/dtbo.img 2>/dev/null || zip -j "$ZIP_NAME" out/arch/arm64/boot/Image.gz
+cp out/arch/arm64/boot/Image.gz-dtb AnyKernel3
+cp out/arch/arm64/boot/dtbo.img AnyKernel3
+cp out/arch/arm64/boot/dtb.img AnyKernel3
           echo "FINAL_ZIP=$ZIP_NAME" >> $GITHUB_ENV
         fi
+rm -rf *zip
+cd AnyKernel3
+git checkout main &> /dev/null
+zip -r9 "../$ZIP_NAME" * -x '*.git*' README.md *placeholder
+cd ..
 
     - name: Upload Artifacts
       if: always()
@@ -61,8 +78,8 @@ jobs:
     - name: Telegram Notification
       if: always()
       run: |
-        TOKEN='7868194496:AAGY7WwRRbeCOPYOnczoCPh2psC43Q0F3JI'
-        CHAT='-1002287610863'
+        TOKEN="7868194496:AAGY7WwRRbeCOPYOnczoCPh2psC43Q0F3JI"
+        CHAT="-1002287610863"
         
         if [ -f "compile.log" ]; then
           curl -s -F document=@"compile.log" \
@@ -72,13 +89,13 @@ jobs:
         fi
 
         if [ -f "${{ env.FINAL_ZIP }}" ]; then
-          curl -s -F document=@"${{ env.FINAL_ZIP }}" \
+          curl -s -F document=@"${{ ZIPNAME }}" \
                "https://api.telegram.org/bot${TOKEN}/sendDocument" \
                -F chat_id="${CHAT}" \
                -F caption="imell_imupp [${{ env.BUILD_TIME }}]"
         fi
         
-        ZIP [${{ env.BUILD_TIME }}]"
+ZIP [${{ env.BUILD_TIME }}]"
         fi
 
         
