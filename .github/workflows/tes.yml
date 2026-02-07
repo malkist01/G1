@@ -3,7 +3,7 @@ name: Anjani Kernel Build
 on:
   workflow_dispatch:
     inputs:
-      repository: { description: 'Repo', required: true, default: 'https://github.com/malkist01/G1.git' }
+      repository: { description: 'Repo', required: true, default: 'malkist01/G1' }
       branch: { description: 'Branch', required: true, default: 'main' }
       defconfig: { description: 'Defconfig', required: true, default: 'vendor/ginkgo_defconfig' }
       kernelsu_branch: { description: 'KSU Branch', required: false, default: 'master' }
@@ -61,8 +61,8 @@ jobs:
     - name: Telegram Notification
       if: always()
       run: |
-        TOKEN="7868194496:AAGY7WwRRbeCOPYOnczoCPh2psC43Q0F3JI"
-        CHAT="-1002287610863"
+        TOKEN='7868194496:AAGY7WwRRbeCOPYOnczoCPh2psC43Q0F3JI'
+        CHAT='-1002287610863'
         
         if [ -f "compile.log" ]; then
           curl -s -F document=@"compile.log" \
