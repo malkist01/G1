@@ -26,6 +26,8 @@ jobs:
         
         export TZ="Asia/Jakarta"
         echo "BUILD_TIME=$(date +'%H%M-%d%m%y')" >> $GITHUB_ENV
+        ZIP_NAME="AnjaniLaurens-${{ env.BUILD_TIME }}.zip"
+        echo "FINAL_ZIP=$ZIP_NAME" >> $GITHUB_ENV
 
         # Download AOSP Clang r563880c
         mkdir tc
@@ -47,14 +49,13 @@ jobs:
         if [ -d "$AK3_DIR" ]; then
          cp -r $AK3_DIR AnyKernel3
          else
-         ZIP_NAME="AnjaniLaurens-${{ env.BUILD_TIME }}.zip"
+
          git clone -q https://github.com/neophyteprjkt/AnyKernel3
          fi
 
           cp out/arch/arm64/boot/Image.gz-dtb AnyKernel3
           cp out/arch/arm64/boot/dtbo.img AnyKernel3
           cp out/arch/arm64/boot/dtb.img AnyKernel3
-          echo "FINAL_ZIP=$ZIP_NAME" >> $GITHUB_ENV
           fi
           rm -rf *zip
           cd AnyKernel3
