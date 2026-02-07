@@ -7,7 +7,10 @@ on:
       branch: { description: 'Branch', required: true, default: 'main' }
       defconfig: { description: 'Defconfig', required: true, default: 'vendor/ginkgo_defconfig' }
       kernelsu_branch: { description: 'KSU Branch', required: false, default: 'master' }
-
+      
+     run: |
+          ZIP_NAME="AnjaniLaurens-${{ env.BUILD_TIME }}.zip"
+        
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -50,7 +53,7 @@ jobs:
 
          git clone -q https://github.com/neophyteprjkt/AnyKernel3
          fi
-          ZIP_NAME="AnjaniLaurens-${{ env.BUILD_TIME }}.zip"
+          
           echo "FINAL_ZIP=$ZIP_NAME" >> $GITHUB_ENV
           cp out/arch/arm64/boot/Image.gz-dtb AnyKernel3
           cp out/arch/arm64/boot/dtbo.img AnyKernel3
