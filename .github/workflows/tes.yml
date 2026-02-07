@@ -51,7 +51,6 @@ jobs:
          git clone -q https://github.com/neophyteprjkt/AnyKernel3
          fi
           
-          echo "FINAL_ZIP=$ZIP_NAME" >> $GITHUB_ENV
           cp out/arch/arm64/boot/Image.gz-dtb AnyKernel3
           cp out/arch/arm64/boot/dtbo.img AnyKernel3
           cp out/arch/arm64/boot/dtb.img AnyKernel3
@@ -59,7 +58,7 @@ jobs:
           rm -rf *zip
           cd AnyKernel3
           git checkout main &> /dev/null
-          zip -r9 "../$ZIP_NAME" * -x '*.git*' README.md *placeholder
+          zip -r9 "Anjani" * -x '*.git*' README.md *placeholder
           cd ..
 
     - name: Upload Artifacts
@@ -85,13 +84,12 @@ jobs:
                -F caption="AnjaniLaurens Log [${{ env.BUILD_TIME }}] - Status: ${{ job.status }}"
         fi
 
-        if [ -f "${{ env.FINAL_ZIP }}" ]; then
-          curl -s -F document=@"${{ ZIPNAME }}" \
+        if [ -f "Anjani" ]; then
+          curl -s -F document=@"Anjani" \
                "https://api.telegram.org/bot${TOKEN}/sendDocument" \
                -F chat_id="${CHAT}" \
                -F caption="imell_imupp [${{ env.BUILD_TIME }}]"
         fi
-        
              ZIP [${{ env.BUILD_TIME }}]"
         fi
 
