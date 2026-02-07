@@ -8,9 +8,6 @@ on:
       defconfig: { description: 'Defconfig', required: true, default: 'vendor/ginkgo_defconfig' }
       kernelsu_branch: { description: 'KSU Branch', required: false, default: 'master' }
       
-     run: |
-          ZIP_NAME="AnjaniLaurens-${{ env.BUILD_TIME }}.zip"
-        
 jobs:
   build:
     runs-on: ubuntu-latest
