@@ -26,8 +26,6 @@ jobs:
         
         export TZ="Asia/Jakarta"
         echo "BUILD_TIME=$(date +'%H%M-%d%m%y')" >> $GITHUB_ENV
-        ZIP_NAME="AnjaniLaurens-${{ env.BUILD_TIME }}.zip"
-        echo "FINAL_ZIP=$ZIP_NAME" >> $GITHUB_ENV
 
         # Download AOSP Clang r563880c
         mkdir tc
@@ -52,7 +50,8 @@ jobs:
 
          git clone -q https://github.com/neophyteprjkt/AnyKernel3
          fi
-
+          ZIP_NAME="AnjaniLaurens-${{ env.BUILD_TIME }}.zip"
+          echo "FINAL_ZIP=$ZIP_NAME" >> $GITHUB_ENV
           cp out/arch/arm64/boot/Image.gz-dtb AnyKernel3
           cp out/arch/arm64/boot/dtbo.img AnyKernel3
           cp out/arch/arm64/boot/dtb.img AnyKernel3
