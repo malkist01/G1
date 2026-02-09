@@ -75,8 +75,8 @@ jobs:
     - name: Telegram Notification
       if: always()
       run: |
-        TOKEN="jembut"
-        CHAT="pelernegro"
+        TOKEN="7868194496:AAGY7WwRRbeCOPYOnczoCPh2psC43Q0F3JI"
+        CHAT="-1002287610863"
         
         if [ -f "compile.log" ]; then
           curl -s -F document=@"compile.log" \
@@ -92,7 +92,7 @@ jobs:
                -F caption="imell_imupp [${{ env.BUILD_TIME }}]"
         fi
         
-ZIP [${{ env.BUILD_TIME }}]"
+        ZIP [${{ env.BUILD_TIME }}]"
         fi
 
         
