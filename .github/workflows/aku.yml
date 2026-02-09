@@ -1,0 +1,98 @@
+name: Alexandra Kernel Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      kernelname: { description: 'Name', required: true, type: string, default: 'malkist' }
+      repository: { description: 'Repo', required: true, default: 'malkist01/G1' }
+      branch: { description: 'Branch', required: true, default: 'main' }
+      defconfig: { description: 'Defconfig', required: true, default: 'vendor/ginkgo_defconfig' }
+      kernelsu_branch: { description: 'KSU Branch', required: false, default: 'master' }
+      repozip: { description: 'Repozip', required: true, default: 'malkist01/Anykernel2' }
+      repobranch: { description: 'Repo Branch', required: true, default: 'master' }
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        repository: ${{ github.event.inputs.repository }}
+        ref: ${{ github.event.inputs.branch }}
+        submodules: recursive
+
+    - name: Setup and Build
+      run: |
+        export DEBIAN_FRONTEND=noninteractive
+        sudo apt-get update
+        sudo apt-get install -y build-essential libncurses-dev bison flex libssl-dev libelf-dev bc zip gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi python3 python-is-python3 git wget curl
+        
+        export TZ="Asia/Jakarta"
+        echo "BUILD_TIME=$(date +'%H%M-%d%m%y')" >> $GITHUB_ENV
+
+        # Download AOSP Clang r547379
+        mkdir tc
+        wget -qO- https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/62cdcefa89e31af2d72c366e8b5ef8db84caea62/clang-r547379.tar.gz | tar -xz -C tc
+        export PATH=$PWD/tc/bin:$PATH
+        
+        curl -LSs "https://raw.githubusercontent.com/backslashxx/KernelSU/master/kernel/setup.sh" | bash -s ${{ github.event.inputs.kernelsu_branch }}
+
+        export ARCH=arm64
+        export KBUILD_BUILD_USER="moonell"
+        export KBUILD_BUILD_HOST="stargaze"
+        ARGS="O=out ARCH=arm64 CC=clang LD=ld.lld AR=llvm-ar NM=llvm-nm STRIP=llvm-strip OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- LLVM=1 LLVM_IAS=1"
+        
+        make $ARGS ${{ github.event.inputs.defconfig }} 2>&1 | tee defconfig.log || true
+        make -j$(nproc) $ARGS 2>&1 | tee compile.log || true
+
+    - name: Create flashable.zip
+      run: |
+          git clone https://github.com/malkist01/AnyKernel2 AnyKernel3
+          rm -rf AnyKernel3/.git AnyKernel3/.github AnyKernel3/LICENSE AnyKernel3/README.md AnyKernel3/modules AnyKernel3/patch AnyKernel3/ramdisk
+          if [[ -f out/arch/arm64/boot/Image.gz-dtb ]]; then
+            cp out/arch/arm64/boot/Image.gz-dtb AnyKernel3/Image.gz-dtb
+          elif [[ -f out/arch/arm64/boot/Image-dtb ]]; then
+            cp out/arch/arm64/boot/Image-dtb AnyKernel3/Image-dtb
+          elif [[ -f out/arch/arm64/boot/Image.gz ]]; then
+            cp out/arch/arm64/boot/Image.gz AnyKernel3/Image.gz
+          elif [[ -f out/arch/arm64/boot/Image ]]; then
+            cp out/arch/arm64/boot/Image AnyKernel3/Image
+          fi
+          if [ -f out/arch/arm64/boot/dtbo.img ]; then
+            cp out/arch/arm64/boot/dtbo.img AnyKernel3/dtbo.img
+          fi
+
+    - name: Upload Artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: Build-Result-${{ env.BUILD_TIME }}
+        path: |
+          *.log
+          *.zip
+        retention-days: 7
+
+    - name: Telegram Notification
+      if: always()
+      run: |
+        TOKEN="jembut"
+        CHAT="pelernegro"
+        
+        if [ -f "compile.log" ]; then
+          curl -s -F document=@"compile.log" \
+               "https://api.telegram.org/bot${TOKEN}/sendDocument" \
+               -F chat_id="${CHAT}" \
+               -F caption="Alexandra Log [${{ env.BUILD_TIME }}] - Status: ${{ job.status }}"
+        fi
+
+        if [ -f "${{ env.FINAL_ZIP }}" ]; then
+          curl -s -F document=@"${{ env.FINAL_ZIP }}" \
+               "https://api.telegram.org/bot${TOKEN}/sendDocument" \
+               -F chat_id="${CHAT}" \
+               -F caption="imell_imupp [${{ env.BUILD_TIME }}]"
+        fi
+        
+ZIP [${{ env.BUILD_TIME }}]"
+        fi
+
+        
