@@ -58,7 +58,7 @@ jobs:
             binutils-aarch64-linux-gnu \
             binutils-arm-linux-gnueabi \
             make bc bison flex libssl-dev python3 \
-            git zip curlie build-essential
+            git zip build-essential
 
     # =========================
     # Kernel Clone (FIXED BRANCH)
