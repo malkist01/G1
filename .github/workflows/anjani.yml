@@ -48,15 +48,6 @@ jobs:
       options: --user root
 
     steps:
-    # =========================
-    # Checkout
-    # =========================
-    - name: Checkout
-      uses: actions/checkout@v4
-
-    # =========================
-    # Setup Packages (FIXED)
-    # =========================
     - name: Setup Packages
       run: |
             apt-get update
