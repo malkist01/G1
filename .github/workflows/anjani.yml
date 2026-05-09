@@ -1,0 +1,129 @@
+name: AnjaniLaurens Compiler
+
+on:
+  workflow_dispatch:
+    inputs:
+      ubuntu:
+        description: 'Run on'
+        default: 'ubuntu-latest'
+        required: true
+        type: string
+
+      name:
+        description: 'Name'
+        default: 'AnjaniLaurens-Ginkgo'
+        required: true
+        type: string
+      
+      kernel-url:
+        description: 'Kernel-url'
+        default: 'https://github.com/malkist01/G1.git'
+        required: true
+        type: string
+
+      kernel-branch:
+        description: 'Kernel-branch'
+        default: 'main'
+        required: true
+        type: string
+
+      kernel-config:
+        description: 'Kernel-config'
+        default: 'vendor/ginkgo_defconfig'
+        required: true
+        type: string
+
+      AK3:
+        description: 'AnyKernel3'
+        default: 'https://github.com/malkist01/AnyKernel3'
+        required: true
+        type: string
+env:
+ TZ : Asia/Jakarta
+jobs:
+  AnjaniLauren:
+    runs-on: ${{ inputs.ubuntu }}
+    container: 
+      image: debian:sid
+      options: --user root
+
+    steps:
+    # =========================
+    # Checkout
+    # =========================
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    # =========================
+    # Setup Packages (FIXED)
+    # =========================
+    - name: Setup Packages
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+            clang lld llvm \
+            gcc-aarch64-linux-gnu \
+            gcc-arm-linux-gnueabi \
+            binutils-aarch64-linux-gnu \
+            binutils-arm-linux-gnueabi \
+            make bc bison flex libssl-dev python3 \
+            git zip curlie build-essential
+
+    # =========================
+    # Kernel Clone (FIXED BRANCH)
+    # =========================
+    - name: Setup Kernel
+      run: |
+        git clone --depth=1 -b ${{ inputs.kernel-branch }} ${{ inputs.kernel-url }} kernel-dir
+
+    # =========================
+    # Build Kernel
+    # =========================
+    - name: Compile
+      run: |
+        mkdir -p out
+        cd kernel-dir
+
+        export ARCH=arm64
+        export SUBARCH=arm64
+        export KBUILD_BUILD_USER="malkist"
+        export KBUILD_BUILD_HOST="android"
+
+        make -j$(nproc --all) ${{ inputs.kernel-config }} O=out all \
+              CC=clang \
+              LD=ld.lld \
+              AR=llvm-ar \
+              NM=llvm-nm \
+              OBJCOPY=llvm-objcopy \
+              OBJDUMP=llvm-objdump \
+              STRIP=llvm-strip \
+              LLVM=1 \
+              LLVM_IAS=0 \
+              KCFLAGS="-fcommon -Qunused-arguments -Wno-everything" \
+              EXTRA_CFLAGS="-fcommon -Qunused-arguments -Wno-everything" \
+              CLANG_TRIPLE=aarch64-linux-gnu- \
+              CROSS_COMPILE=aarch64-linux-gnu- \
+              CROSS_COMPILE_ARM32=arm-linux-gnueabi- 2>&1 | tee $OUT_DIR/build.log
+
+
+    # =========================
+    # AnyKernel3
+    # =========================
+    - name: AnyKernel3
+      run: |
+        git clone -b ginkgo ${{ inputs.AK3 }} AnyKernel3
+
+        cp out/arch/arm64/boot/Image* AnyKernel3/ 2>/dev/null || true
+        cp out/arch/arm64/boot/dtb* AnyKernel3/ 2>/dev/null || true
+
+        cd AnyKernel3
+        zip -r9 ../kernel.zip *
+
+    # =========================
+    # Upload
+    # =========================
+    - name: Upload
+      uses: actions/upload-artifact@v4
+      with:
+        name: "${{ inputs.name }}"
+        path: kernel.zip
