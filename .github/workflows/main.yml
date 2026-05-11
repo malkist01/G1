@@ -1,5 +1,5 @@
-# Annoy Project
-name: Clang-21
+# Anjani Project
+name: susfs
 on:
   workflow_dispatch:
     inputs:
@@ -10,7 +10,7 @@ on:
         type: string
       name:
         description: 'Name'
-        default: '4.14-AnjaniLaurens'
+        default: '4.14.356'
         required: true
         type: string
       compiler:
@@ -25,7 +25,7 @@ on:
         type: string
       kernel-url:
         description: 'Kernel-url'
-        default: 'https://github.com/malkist01/G1.git'
+        default: 'https://github.com/malkist01/G4.git'
         required: true
         type: string
       kernel-branch:
@@ -38,14 +38,9 @@ on:
         default: 'vendor/ginkgo_defconfig'
         required: true
         type: string
-      kernelsu:
-        description: 'KernelSU | false for disable'
-        default: 'hookless'
-        required: true
-        type: string
       disable-lto:
         description: 'Disable LTO'
-        default: 'true'
+        default: 'false'
         required: true
         type: string
       AK3:
@@ -53,10 +48,15 @@ on:
         default: 'https://github.com/malkist01/AnyKernel3.git'
         required: true
         type: string
+      ak3-branch:
+        description: 'AnyKernel3-branch'
+        default: 'ginkgo'
+        required: true
+        type: string
 env:
- TZ: Asia/Jakarta        
+ TZ: Asia/Jakarta
 jobs:
-  Laurens:
+  Anjanikernelbuild:
     runs-on: ${{ inputs.ubuntu }}
     steps:
     - name: Checkin
@@ -79,7 +79,6 @@ jobs:
             fi
          fi
          echo "kernel-config: ${{ inputs.kernel-config }}"
-         echo "kernelsu: ${{ inputs.kernelsu }}"
          echo "disable-lto: ${{ inputs.disable-lto }}"
          echo "Annoy Project"
     - name: Checkout
@@ -132,7 +131,9 @@ jobs:
             elif [ ${{ inputs.aosp-clang }} == "20" ]; then
                 aria2c -o aosp-clang.tar.gz https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-r547379.tar.gz          
             elif [ ${{ inputs.aosp-clang }} == "21" ]; then
-                aria2c -o aosp-clang.tar.gz https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/0998f421320ae02fddabec8a78b91bf7620159f6/clang-r563880.tar.gz         
+                aria2c -o aosp-clang.tar.gz https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/4d2864f08ff2c290563fb903a5156e0504620bbe/clang-r563880c.tar.gz      
+            elif [ ${{ inputs.aosp-clang }} == "22" ]; then
+                aria2c -o aosp-clang.tar.gz https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/105aba85d97a53d364585ca755752dae054b49e8/clang-r584948b.tar.gz
             elif [ ${{ inputs.aosp-clang }} != false ]; then
                 aria2c -o aosp-clang.tar.gz ${{ inputs.aosp-clang }}
             fi
@@ -151,29 +152,31 @@ jobs:
             fi
             ls
          fi
-    - name: Setup KernelSU
+    - name: Patch
+      run: |
+            cd kernel-dir
+            curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/refs/heads/main/kernel/setup.sh" | bash -s main
+            echo "CONFIG_KSU=y" >> ./arch/arm64/configs/${{ inputs.kernel-config }}
+            echo "CONFIG_KSU_MANUAL_HOOK=y" >> ./arch/arm64/configs/${{ inputs.kernel-config }}
+            curl -LSs "https://raw.githubusercontent.com/JackA1ltman/NonGKI_Kernel_Build_2nd/refs/heads/mainline/Patches/syscall_hook_patches.sh" | bash -s
+                echo "CONFIG_KPM=y" >> ./arch/arm64/configs/${{ inputs.kernel-config }}
+                echo "CONFIG_KALLSYMS=y" >> ./arch/arm64/configs/${{ inputs.kernel-config }}
+                echo "CONFIG_KALLSYMS_ALL=y" >> ./arch/arm64/configs/${{ inputs.kernel-config }}
+                curl "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU_patch/refs/heads/main/kpm/patch_linux" -o patch
+                chmod +x patch
+    - name: LTO
       run: |
          if [ ${{ inputs.kernel-url }} != false ]; then
             cd kernel-dir
-          echo "CONFIG_KSU=y" >> ./arch/arm64/configs/vendor/ginkgo_config
-          echo "CONFIG_KSU_MANUAL_HOOK=y" >> ./arch/arm64/configs/vendor/ginkgo_config
-          curl -LSs "https://raw.githubusercontent.com/JackA1ltman/NonGKI_Kernel_Build_2nd/refs/heads/mainline/Patches/syscall_hook_patches.sh" | bash -s
-          curl -LSs "https://raw.githubusercontent.com/JackA1ltman/NonGKI_Kernel_Build_2nd/refs/heads/mainline/Patches/backport_patches.sh" | bash -s
          fi
-         if [ ${{ inputs.kernel-url }} == false ]; then
-            if [ ${{ inputs.kernel-branch }} != main ]; then
-               ${{ inputs.kernel-branch }}
-            fi
-         fi
-         rm -rf KernelSU
-         if [ ${{ inputs.kernelsu }} == ksu ]; then
-            curl -LSs "https://raw.githubusercontent.com/FirmanBell/KernelSU/main/kernel/setup.sh" | bash -s main
-         elif [ ${{ inputs.kernelsu }} == next ]; then
-            curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -s legacy
-         elif [ ${{ inputs.kernelsu }} == hookless ]; then   
-            curl -LSs "https://raw.githubusercontent.com/FirmanBell/KernelSU-Next/stable/kernel/setup.sh" | bash -s hookless
-         elif [ ${{ inputs.kernelsu }} != false ]; then
-            ${{ inputs.kernelsu }}
+         if [ ${{ inputs.disable-lto }} = true ]; then
+             if grep -q "LTO" "arch/arm64/configs/${{ inputs.kernel-config }}"
+             then
+                  sed -i 's/CONFIG_LTO=y/CONFIG_LTO=n/' arch/arm64/configs/${{ inputs.kernel-config }} 
+                  sed -i 's/CONFIG_LTO_CLANG=y/CONFIG_LTO_CLANG=n/' arch/arm64/configs/${{ inputs.kernel-config }} 
+                  sed -i 's/CONFIG_THINLTO=y/CONFIG_THINLTO=n/' arch/arm64/configs/${{ inputs.kernel-config }} 
+                  echo "CONFIG_LTO_NONE=y" | tee -a arch/arm64/configs/${{ inputs.kernel-config }} >/dev/null
+             fi
          fi
     - name: Compile
       run: |        
@@ -206,7 +209,7 @@ jobs:
          ${COMMAND}
     - name: AnyKernel3
       run: |
-          git clone -b ginkgo ${{ inputs.AK3 }} AnyKernel3
+          git clone -b ${{ inputs.ak3-branch }} ${{ inputs.AK3 }} AnyKernel3
           rm -rf AnyKernel3/.git AnyKernel3/.github AnyKernel3/LICENSE AnyKernel3/README.md AnyKernel3/modules AnyKernel3/patch AnyKernel3/ramdisk
           if [[ -f out/arch/arm64/boot/Image.gz-dtb ]]; then
             cp out/arch/arm64/boot/Image.gz-dtb AnyKernel3/Image.gz-dtb
