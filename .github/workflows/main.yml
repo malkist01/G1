@@ -25,7 +25,7 @@ on:
         type: string
       kernel-url:
         description: 'Kernel-url'
-        default: 'https://github.com/malkist01/G4.git'
+        default: 'https://github.com/malkist01/G1.git'
         required: true
         type: string
       kernel-branch:
