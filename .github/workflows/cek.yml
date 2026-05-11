@@ -1,0 +1,114 @@
+name: Build Kernel Ginkgo
+on:
+  workflow_dispatch:
+    inputs:
+      KERNEL_BRANCH:
+        description: 'Common kernel branch'
+        default: 'main'
+        required: true
+      KERNEL_URL:
+        description: 'Common kernel repository URL'
+        default: 'https://github.com/malkist01/G1.git'
+        required: true
+  
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        path: rootdir
+        show-progress: false
+        fetch-depth: 1
+        
+    - name: Prepare dependencies
+      run: |
+        sudo apt update -y
+        sudo apt install rsync bc cpio flex bison aptitude aria2 git python-is-python3 tar perl wget curl lz4 ccache -y
+        sudo aptitude install libssl-dev -y
+
+    - name: Clone Kernel Source
+      run: |
+        git clone --depth=1 --single-branch -b ${{ inputs.KERNEL_BRANCH }} ${{ inputs.KERNEL_URL }} kernel_root
+        echo "[-] Done."
+      working-directory: rootdir
+
+    # TODO: Use action caching
+    - name: Fetch toolchains
+      run: wget -q https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/4d2864f08ff2c290563fb903a5156e0504620bbe/clang-r563880c.tar.gz -O ~/clang.tar.gz; mkdir -p ~/clang; tar -xf ~/clang.tar.gz -C ~/clang
+
+    - name: Prepare timezone fix
+      run: |
+        sudo rm /etc/localtime
+        sudo ln -s /usr/share/zoneinfo/Asia/Jakarta /etc/localtime
+
+    - name: Build kernel
+      id: buildKernel
+      run: |
+        cd kernel_root
+        BUILD_TIME=$(date +'%Y%m%d%H%M')
+        GIT_SHA=$(git rev-parse --short HEAD)
+        DETAILS="Redmi Note 8-${GIT_SHA}-${BUILD_TIME}"
+        
+        # Start building
+        export PATH=$HOME/clang/bin:$PATH
+        export LLVM=1
+        export LLVM_IAS=1
+        export ARCH=arm64
+
+        export KBUILD_BUILD_USER="malkist"
+        export KBUILD_BUILD_HOST="android"
+
+        make -C $(pwd) O=out vendor/ginkgo_defconfig -j$(nproc --all)
+        make -C $(pwd) O=out -j$(nproc --all)
+
+        IMAGE_FILE="out/arch/arm64/boot/Image.gz-dtb"
+        DTBO_FILE="out/arch/arm64/boot/dtbo.img"
+        
+        if [ ! -f "$IMAGE_FILE" "$DTBO_FILE" ]; then
+          echo "::error::Kernel Image.gz not found!"
+          exit 1
+        fi
+
+        cp "$IMAGE_FILE" ../external/anykernel3/
+        cp "$DTBO_FILE" ../external/anykernel3/
+        
+        pushd ../external/anykernel3
+        zip -r9 "../../${DETAILS}.zip" *
+        popd
+
+        echo "buildDetails=${DETAILS}" >> $GITHUB_OUTPUT
+        echo "zipPath=$(pwd)/../${DETAILS}.zip" >> $GITHUB_OUTPUT
+      working-directory: rootdir
+
+    - name: Upload AnyKernel3
+      continue-on-error: true
+      uses: actions/upload-artifact@v7
+      with:
+        name: AnyKernel3-${{ steps.buildKernel.outputs.buildDetails }}
+        path: rootdir/external/anykernel3/*
+        compression-level: 9
+
+    - name: Upload Image.gz-dtb
+      continue-on-error: true
+      uses: actions/upload-artifact@v7
+      with:
+        name: Image_GZ-${{ steps.buildKernel.outputs.buildDetails }}
+        path: rootdir/kernel_root/out/arch/arm64/boot/Image.gz-dtb
+        compression-level: 9
+
+#    - name: Upload to telegram
+#      env:
+#        CHAT_ID: ${{ secrets.CHAT_ID }}
+#        BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+#        RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+#        TITLE: "Redmi Note 8"
+#      run: |
+#        if [ ! -z "${{ secrets.BOT_TOKEN }}" ]; then
+#          export VERSION=$(cd kernel_root && git rev-list --count HEAD)
+#          ZIP=${{ steps.buildKernel.outputs.zipPath }}
+#          export MD5SUM="$(md5sum $ZIP | cut -d' ' -f1)"
+#          pip3 install telethon
+#          python3 scripts/bot.py $ZIP
+#        fi
+#      working-directory: rootdir
