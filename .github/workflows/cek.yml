@@ -35,7 +35,8 @@ jobs:
 
     # TODO: Use action caching
     - name: Fetch toolchains
-      run: wget -q https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/4d2864f08ff2c290563fb903a5156e0504620bbe/clang-r563880c.tar.gz -O ~/clang.tar.gz; mkdir -p ~/clang; tar -xf ~/clang.tar.gz -C ~/clang
+      run: wget https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/4d2864f08ff2c290563fb903a5156e0504620bbe/clang-r563880c.tar.gz -O clang.tar.gz
+          mkdir -p clang && tar -xf clang.tar.gz -C clang
 
     - name: Prepare timezone fix
       run: |
@@ -55,6 +56,17 @@ jobs:
         export LLVM=1
         export LLVM_IAS=1
         export ARCH=arm64
+        export SUBARCH=arm64
+        export CLANG_TRIPLE=aarch64-linux-gnu-
+        export CROSS_COMPILE=aarch64-linux-gnu-
+        export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
+        export CC=clang
+        export LD=ld.lld
+        export AR=llvm-ar
+        export NM=llvm-nm
+        export OBJCOPY=llvm-objcopy
+        export OBJDUMP=llvm-objdump
+        export STRIP=llvm-strip
 
         export KBUILD_BUILD_USER="malkist"
         export KBUILD_BUILD_HOST="android"
